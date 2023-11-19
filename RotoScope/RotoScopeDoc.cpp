@@ -57,6 +57,8 @@ CRotoScopeDoc::CRotoScopeDoc()
 {
     ::CoInitialize(NULL);
 
+	m_moviemake.SetProfileName(L"profile720p.prx");
+
     // Set the image size to an initial default value and black.
 	m_image.SetSize(640, 480);
     m_image.Fill(0, 0, 0);
@@ -569,6 +571,10 @@ void CRotoScopeDoc::SaveMovieData(IXMLDOMDocument *xmlDoc, IXMLDOMNode *inNode)
 			nodePoint.Release();
 		}
 
+		//
+		// TODO: Save green screen stuff
+		//
+
 		// When done, release <frame> the node
 		node.Release();
 	}
@@ -706,6 +712,64 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 			// tag, push it onto the end of our list of 
 			// points.
 			m_draw.back().push_back(point);
+		}
+	
+		// Handle finding a nested <gscreen> tag
+		if (nodeName == L"gscreen") {
+
+			// Get a list of all attribute nodes and the
+			// length of that list
+			CComPtr<IXMLDOMNamedNodeMap> attributes;
+			node->get_attributes(&attributes);
+			long len;
+			attributes->get_length(&len);
+
+			wstring sname = L"[EMPTY]";
+
+			// Loop over the list of attributes
+			for (int i = 0; i < len; i++)
+			{
+				// Get attribute i
+				CComPtr<IXMLDOMNode> attrib;
+				attributes->get_item(i, &attrib);
+
+				// Get the name of the attribute
+				CComBSTR name;
+				attrib->get_nodeName(&name);
+
+				// Get the value of the attribute.  A CComVariant is a variable
+				// that can have any type. It loads the attribute value as a
+				// string (UNICODE), but we can then change it to an integer 
+				// (VT_I4) or double (VT_R8) using the ChangeType function 
+				// and then read its integer or double value from a member variable.
+				CComVariant value;
+				attrib->get_nodeValue(&value);
+
+				if (name == 'path') {
+
+					// Load the current gimage:
+
+					sname = value.bstrVal;
+				}
+			}
+
+			// Determine if we use a green screeen:
+
+			if (sname == L"[EMPTY]") {
+
+				// Do nothing
+
+				this->do_gscreen = false;
+			}
+
+			else {
+
+				// Load image from file:
+
+				this->gimage.LoadFile(sname.c_str());
+
+				this->do_gscreen = true;
+			}
 		}
 	}
 }

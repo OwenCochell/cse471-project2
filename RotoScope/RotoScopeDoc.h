@@ -85,6 +85,13 @@ private:
 	int m_mode;
 	int m_dot_count;
 
+	//
+	// Green Screen Image
+	//
+
+	CGrImage gimage;
+	bool do_gscreen = false;
+
 	std::stack<CGrImage>	m_images;
 
     afx_msg void OnFramesWriteoneframe();
