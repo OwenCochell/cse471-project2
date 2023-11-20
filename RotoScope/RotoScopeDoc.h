@@ -108,6 +108,8 @@ private:
     afx_msg void OnMoviesOpenbackgroundaudio();
     afx_msg void OnMoviesClosebackgroundaudio();
     afx_msg void OnUpdateMoviesClosebackgroundaudio(CCmdUI *pCmdUI);
+
+	void DoGreenscreen();
 public:
 	virtual BOOL OnSaveDocument(LPCTSTR lpszPathName);
 	void SaveMovieData(IXMLDOMDocument *xmlDoc, IXMLDOMNode *inNode);

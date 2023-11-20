@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<movie output="C:\Users\Wyatt Roehler\Documents\Visual Studio 2015\Projects\step7\RotoScope\colbert3.asf" source="C:\Users\Wyatt Roehler\Documents\Visual Studio 2015\Projects\step7\RotoScope\colbert_1sec.wmv">
+	<frame num="0">
+		<point x="1196" y="267"/>
+		<gscreen path="jennifer-over.jpg"/>
+	</frame>
+</movie>

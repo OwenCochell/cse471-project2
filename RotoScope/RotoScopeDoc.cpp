@@ -7,6 +7,7 @@
 
 #include "RotoScopeDoc.h"
 #include "xmlhelp.h"
+#include "AMatte.h"
 
 
 #ifdef _DEBUG
@@ -162,6 +163,27 @@ void CRotoScopeDoc::OnMoviesOpenbackgroundaudio()
 
 void CRotoScopeDoc::OnMoviesClosebackgroundaudio() { m_backaudio.Close(); }
 void CRotoScopeDoc::OnUpdateMoviesClosebackgroundaudio(CCmdUI *pCmdUI) { pCmdUI->Enable(m_backaudio.IsOpen()); }
+
+/**
+* Does the green screen operation.
+* 
+* We do chromakeying using green background replacement.
+* We utilize the data in gimage as the background
+*/
+void CRotoScopeDoc::DoGreenscreen()
+{
+	// Create alpha matte from current image and foreground:
+
+	auto matte = blue_screen(&m_image, &gimage, 1, 0.5);
+
+	// Apply the matte to the current image:
+
+	CGrImage timage = m_image;
+
+	// Apply blue screen:
+
+	alpha_apply(std::move(matte), &timage, &gimage, &m_image);
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -745,7 +767,7 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 				CComVariant value;
 				attrib->get_nodeValue(&value);
 
-				if (name == 'path') {
+				if (name == L"path") {
 
 					// Load the current gimage:
 
@@ -804,6 +826,16 @@ void CRotoScopeDoc::DrawImage()
 			m_image[r][c * 3 + 1] = m_initial[r][c * 3 + 1];
 			m_image[r][c * 3 + 2] = m_initial[r][c * 3 + 2];
 		}
+	}
+
+	// Determine if we need to do green screen:
+	// TODO: Debug this:
+
+	if (this->do_gscreen) {
+
+		// Do green screen operation:
+
+		this->DoGreenscreen();
 	}
 
 	// Write any saved drawings into the frame
