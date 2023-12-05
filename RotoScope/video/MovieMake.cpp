@@ -317,10 +317,10 @@ bool CMovieMake::WriteImage(const BYTE *p_image)
 bool CMovieMake::WriteAudio(const std::vector<short> &p_audio)
 {
 
-    if (p_audio.empty()) {
+    //if (p_audio.empty()) {
         // We do nothing
-        return true;
-    }
+    //    return true;
+    //}
     return WriteAudio(&p_audio[0], int(p_audio.size()) / m_numChannels);
 }
 

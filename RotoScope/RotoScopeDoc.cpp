@@ -70,6 +70,7 @@ CRotoScopeDoc::CRotoScopeDoc()
 	m_width = 1;
 	m_dot_count = 0;
 	m_bird.LoadFile(L"spaceship_small.png");
+	OnOpenDocument(L"final.xml");
 
 	//OnEditSetvariables();
 }
@@ -255,6 +256,10 @@ void CRotoScopeDoc::OnFramesCreateoneframe()
 
 void CRotoScopeDoc::CreateOneFrame()
 {
+
+	m_audio.clear();
+	m_audio.resize(size_t(m_moviemake.GetSampleRate() / m_moviemake.GetFPS()) * m_moviemake.GetNumChannels());
+
     //
     // Clear our frame first
     //
@@ -283,27 +288,27 @@ void CRotoScopeDoc::CreateOneFrame()
     // audio associated with one frame of video.
     //
 
-    std::vector<short> audio;
-    if(m_moviesource.HasAudio() && m_moviesource.ReadAudio(audio))
-    {
-        // The problem is that the input audio may not be in the same format
-        // as the output audio.  For example, we may have a different number of 
-        // audio frames for a given video frame.  Also, the channels may be
-        // different.  I'll assume my output is stereo here, since I created a
-        // stereo profile, but the input may be mono.
+	std::vector<short> audio;
+	if (m_moviesource.HasAudio() && m_moviesource.ReadAudio(audio))
+	{
+		// The problem is that the input audio may not be in the same format
+		// as the output audio.  For example, we may have a different number of 
+		// audio frames for a given video frame.  Also, the channels may be
+		// different.  I'll assume my output is stereo here, since I created a
+		// stereo profile, but the input may be mono.
 
-        if(m_moviesource.GetNumChannels() == 2)
-        {
-            // Easiest, both are the same.
-            // What's the ratio of playback?
-            double playrate = double(audio.size()) / double(m_audio.size());
-            for(unsigned f=0;  f<m_audio.size() / 2;  f++)
-            {
-                int srcframe = int(playrate * f);
-                m_audio[f*2] = audio[srcframe*2];
-                m_audio[f*2+1] = audio[srcframe*2+1];
-            }
-        }
+		if (m_moviesource.GetNumChannels() == 2)
+		{
+			// Easiest, both are the same.
+			// What's the ratio of playback?
+			double playrate = double(audio.size()) / double(m_audio.size());
+			for (unsigned f = 0; f < m_audio.size() / 2; f++)
+			{
+				int srcframe = int(playrate * f);
+				m_audio[f * 2] = audio[srcframe * 2];
+				m_audio[f * 2 + 1] = audio[srcframe * 2 + 1];
+			}
+		}
         else
         {
             // Mono into stereo
@@ -945,6 +950,8 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 			long len;
 			attributes->get_length(&len);
 
+			bool disable = false;
+
 			// Loop over the list of attributes
 			for (int i = 0; i < len; i++)
 			{
@@ -979,11 +986,18 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 					value.ChangeType(VT_R8);
 					this->rip_freq = value.dblVal;
 				}
+
+				if (name == "dis") {
+					disable = true;
+				}
 			}
 
-			// Finally, set ripple to true:
-
-			this->do_ripple = true;
+			if (disable) {
+				this->do_ripple = false;
+			}
+			else {
+				this->do_ripple = true;
+			}
 		}
 
 		// Handle finding a nested <point> tag
