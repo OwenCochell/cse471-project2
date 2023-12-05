@@ -8,7 +8,7 @@
 #include "RotoScopeDoc.h"
 #include "xmlhelp.h"
 #include "AMatte.h"
-
+#include "ImageWarp.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -61,7 +61,7 @@ CRotoScopeDoc::CRotoScopeDoc()
 	m_moviemake.SetProfileName(L"profile720p.prx");
 
     // Set the image size to an initial default value and black.
-	m_image.SetSize(640, 480);
+	m_image.SetSize(1280, 720);
     m_image.Fill(0, 0, 0);
 	m_movieframe = 0;
 	m_b = 0;
@@ -69,7 +69,7 @@ CRotoScopeDoc::CRotoScopeDoc()
 	m_r = 255;
 	m_width = 1;
 	m_dot_count = 0;
-	m_bird.LoadFile(L"birdp.png");
+	m_bird.LoadFile(L"spaceship_small.png");
 
 	//OnEditSetvariables();
 }
@@ -174,7 +174,7 @@ void CRotoScopeDoc::DoGreenscreen()
 {
 	// Create alpha matte from current image and foreground:
 
-	auto matte = blue_screen(&m_image, &gimage, 1, 0.5);
+	auto matte = blue_screen(&m_image, &gimage, this->a1, this->a2);
 
 	// Apply the matte to the current image:
 
@@ -182,7 +182,9 @@ void CRotoScopeDoc::DoGreenscreen()
 
 	// Apply blue screen:
 
-	alpha_apply(std::move(matte), &timage, &gimage, &m_image);
+	//alpha_apply(std::move(matte), &timage, &gimage, &m_image);
+	alpha_apply(std::move(matte), &gimage, &timage, &m_image);
+
 }
 
 
@@ -400,7 +402,7 @@ void CRotoScopeDoc::OnFramesWritethencreateremaining()
         return;
 
     // Do the creation operation for one entire second
-    for(int i=0;  ;  i++)
+    for(int i=0;  ;  i++)  // TODO: Change this to stop when we are ready to place ship
     {
         OnFramesWriteoneframe();
         OnFramesCreateoneframe();
@@ -468,6 +470,12 @@ void CRotoScopeDoc::Mouse(int p_x, int p_y)
 
 	else if (m_mode == 2)
 	{
+		std::list<CPoint> empty;
+		while ((int)m_draw.size() < m_movieframe + 1)
+			m_draw.push_back(empty);
+
+		m_draw[m_movieframe].push_back(CPoint(x, y));
+
 		DrawBird(m_image, x, y);
 		UpdateAllViews(NULL);
 	}
@@ -654,9 +662,78 @@ BOOL CRotoScopeDoc::OnOpenDocument(LPCTSTR lpszPathName)
 
 void CRotoScopeDoc::XmlLoadMovie(IXMLDOMNode *xml)
 {
+
+	// Get a list of all attribute nodes and the
+	// length of that list
+	CComPtr<IXMLDOMNamedNodeMap> attributes;
+	xml->get_attributes(&attributes);
+	long len;
+	attributes->get_length(&len);
+
+	// Loop over the list of attributes
+	for (int i = 0; i < len; i++)
+	{
+		// Get attribute i
+		CComPtr<IXMLDOMNode> attrib;
+		attributes->get_item(i, &attrib);
+
+		// Get the name of the attribute
+		CComBSTR name;
+		attrib->get_nodeName(&name);
+
+		// Get the value of the attribute.  A CComVariant is a variable
+		// that can have any type. It loads the attribute value as a
+		// string (UNICODE), but we can then change it to an integer 
+		// (VT_I4) or double (VT_R8) using the ChangeType function 
+		// and then read its integer or double value from a member variable.
+		CComVariant value;
+		attrib->get_nodeValue(&value);
+
+		if (name == "source")
+		{
+			m_moviesource.Open(value.bstrVal);
+		}
+		else if (name == "output")
+		{
+			m_moviemake.Open(value.bstrVal);
+		}
+	}
+
+	this->xml_root = xml;
+
 	// Handle the children of a <movie> tag
 	CComPtr<IXMLDOMNode> node;
 	xml->get_firstChild(&node);
+	for (; node != NULL; NextNode(node))
+	{
+		// Get the name of the node
+		CComBSTR nodeName;
+		node->get_nodeName(&nodeName);
+
+		if (nodeName == L"frame")
+		{
+			//XmlLoadFrame(node);
+		}
+	}
+	// Add empty draw point:
+
+	std::list<CPoint> empty;
+	m_draw.push_back(empty);
+}
+
+void CRotoScopeDoc::LoadXMLFrame()
+{
+
+	// Determine if we are not working with XML:
+	
+	if (this->xml_root == nullptr) {
+		// Just quit:
+
+		return;
+	}
+	// Handle the children of a <movie> tag
+	CComPtr<IXMLDOMNode> node;
+	this->xml_root->get_firstChild(&node);
 	for (; node != NULL; NextNode(node))
 	{
 		// Get the name of the node
@@ -672,6 +749,50 @@ void CRotoScopeDoc::XmlLoadMovie(IXMLDOMNode *xml)
 
 void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 {
+	CComPtr<IXMLDOMNamedNodeMap> attributes;
+	xml->get_attributes(&attributes);
+	long len;
+	attributes->get_length(&len);
+
+	int frame_num = 0;
+
+	// Loop over the list of attributes
+	for (int i = 0; i < len; i++)
+	{
+		// Get attribute i
+		CComPtr<IXMLDOMNode> attrib;
+		attributes->get_item(i, &attrib);
+
+		// Get the name of the attribute
+		CComBSTR name;
+		attrib->get_nodeName(&name);
+
+		// Get the value of the attribute.  A CComVariant is a variable
+		// that can have any type. It loads the attribute value as a
+		// string (UNICODE), but we can then change it to an integer 
+		// (VT_I4) or double (VT_R8) using the ChangeType function 
+		// and then read its integer or double value from a member variable.
+		CComVariant value;
+		attrib->get_nodeValue(&value);
+
+		if (name == "num")
+		{
+			// Convert to intiger:
+
+			value.ChangeType(VT_I4);
+			frame_num = value.intVal;
+		
+			// Determine if this is our current frame:
+
+			if (frame_num != this->m_movieframe) {
+
+				// Not equal, quit:
+
+				return;
+			}
+		}
+	}
+
 	// When this function is called we have a new <frame> tag.
 	// We assume we don't skip any tag numbers.
 	// Push on an empty frame
@@ -730,6 +851,12 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 				}
 			}
 
+			// Fill in behind us with empty values
+
+			std::list<CPoint> empty;
+			while ((int)m_draw.size() < frame_num)
+				m_draw.push_back(empty);
+
 			// When we've pulled the x,y values from the
 			// tag, push it onto the end of our list of 
 			// points.
@@ -773,9 +900,21 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 
 					sname = value.bstrVal;
 				}
+
+				if (name == L"a1") {
+
+					value.ChangeType(VT_R8);
+					this->a1 = value.dblVal;
+				}
+
+				if (name == L"a2") {
+
+					value.ChangeType(VT_R8);
+					this->a2 = value.dblVal;
+				}
 			}
 
-			// Determine if we use a green screeen:
+			// Determine if we use a green screen:
 
 			if (sname == L"[EMPTY]") {
 
@@ -792,6 +931,110 @@ void CRotoScopeDoc::XmlLoadFrame(IXMLDOMNode *xml)
 
 				this->do_gscreen = true;
 			}
+		}
+	
+		// Handle finding a nested <ripple> tag
+		// If the time is specified, we set the time to that value.
+		// We also toggle the do_ripple value when we encounter each tag
+		if (nodeName == L"ripple")
+		{
+			// Get a list of all attribute nodes and the
+			// length of that list
+			CComPtr<IXMLDOMNamedNodeMap> attributes;
+			node->get_attributes(&attributes);
+			long len;
+			attributes->get_length(&len);
+
+			// Loop over the list of attributes
+			for (int i = 0; i < len; i++)
+			{
+				// Get attribute i
+				CComPtr<IXMLDOMNode> attrib;
+				attributes->get_item(i, &attrib);
+
+				// Get the name of the attribute
+				CComBSTR name;
+				attrib->get_nodeName(&name);
+
+				// Get the value of the attribute.  A CComVariant is a variable
+				// that can have any type. It loads the attribute value as a
+				// string (UNICODE), but we can then change it to an integer 
+				// (VT_I4) or double (VT_R8) using the ChangeType function 
+				// and then read its integer or double value from a member variable.
+				CComVariant value;
+				attrib->get_nodeValue(&value);
+
+				if (name == "time")
+				{
+					value.ChangeType(VT_I4);
+					this->rtime = value.intVal;
+				}
+
+				if (name == "amp") {
+					value.ChangeType(VT_R8);
+					this->rip_amp = value.dblVal;
+				}
+
+				if (name == "freq") {
+					value.ChangeType(VT_R8);
+					this->rip_freq = value.dblVal;
+				}
+			}
+
+			// Finally, set ripple to true:
+
+			this->do_ripple = true;
+		}
+
+		// Handle finding a nested <point> tag
+		if (nodeName == L"image")
+		{
+			CPoint point;
+
+			// Get a list of all attribute nodes and the
+			// length of that list
+			CComPtr<IXMLDOMNamedNodeMap> attributes;
+			node->get_attributes(&attributes);
+			long len;
+			attributes->get_length(&len);
+
+			// Loop over the list of attributes
+			for (int i = 0; i < len; i++)
+			{
+				// Get attribute i
+				CComPtr<IXMLDOMNode> attrib;
+				attributes->get_item(i, &attrib);
+
+				// Get the name of the attribute
+				CComBSTR name;
+				attrib->get_nodeName(&name);
+
+				// Get the value of the attribute.  A CComVariant is a variable
+				// that can have any type. It loads the attribute value as a
+				// string (UNICODE), but we can then change it to an integer 
+				// (VT_I4) or double (VT_R8) using the ChangeType function 
+				// and then read its integer or double value from a member variable.
+				CComVariant value;
+				attrib->get_nodeValue(&value);
+
+				if (name == "x")
+				{
+					value.ChangeType(VT_I4);
+					this->image_x = value.intVal;
+				}
+				else if (name == "y")
+				{
+					value.ChangeType(VT_I4);
+					this->image_y = value.intVal;
+				}
+			}
+
+			// Enable image stuff:
+			this->do_image = true;
+
+			// Clear stuff that may be causing problems:
+
+			this->m_draw.clear();
 		}
 	}
 }
@@ -817,6 +1060,10 @@ void CRotoScopeDoc::OnEditClearframe()
 
 void CRotoScopeDoc::DrawImage()
 {
+	// Load the current frame:
+	
+	this->LoadXMLFrame();
+
 	// Write image from m_initial into the current image
 	for (int r = 0; r<m_image.GetHeight() && r<m_initial.GetHeight(); r++)
 	{
@@ -839,16 +1086,32 @@ void CRotoScopeDoc::DrawImage()
 	}
 
 	// Write any saved drawings into the frame
-	if (m_movieframe < (int)m_draw.size())
+ 	if (m_movieframe < (int)m_draw.size())
 	{
 		for (list<CPoint>::iterator i = m_draw[m_movieframe].begin();
 		i != m_draw[m_movieframe].end();  i++)
 		{
-			for (int w = 0; w < m_width; w++)
-			{
-				m_image.Set(i->x + w, i->y, m_r, m_g, m_b);
-			}
+			// Draw bird at this position:
+
+			this->DrawBird(this->m_image, i->x, i->y);
+			//for (int w = 0; w < m_width; w++)
+			//{
+			//	m_image.Set(i->x + w, i->y, m_r, m_g, m_b);
+			//}
 		}
+	}
+
+	if (this->do_image) {
+
+		// Just draw the image:
+		this->DrawBird(this->m_image, this->image_x, this->image_y);
+	}
+
+	// Determine if we need to do a ripple effect:
+
+	if (do_ripple) {
+		// Do ripple effect, while incrementing time:
+		applyRippleEffect(m_image, this->rtime++, this->rip_freq, this->rip_amp);
 	}
 
 	UpdateAllViews(NULL);
@@ -1018,8 +1281,9 @@ void CRotoScopeDoc::RotateImage(CGrImage &image, int theta)
 
 void CRotoScopeDoc::DrawBird(CGrImage &image, int x1, int y1)
 {
+
 	//allow undo of placing
-	m_images.push(m_image);
+	//m_images.push(m_image);
 	for (int r = 0; r<m_bird.GetHeight(); r++)
 	{
 		for (int c = 0; c<m_bird.GetWidth(); c++)

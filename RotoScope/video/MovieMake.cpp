@@ -316,6 +316,11 @@ bool CMovieMake::WriteImage(const BYTE *p_image)
 //! \returns true if successful
 bool CMovieMake::WriteAudio(const std::vector<short> &p_audio)
 {
+
+    if (p_audio.empty()) {
+        // We do nothing
+        return true;
+    }
     return WriteAudio(&p_audio[0], int(p_audio.size()) / m_numChannels);
 }
 
@@ -325,6 +330,11 @@ bool CMovieMake::WriteAudio(const std::vector<short> &p_audio)
 //! \returns true if successful
 bool CMovieMake::WriteAudio(const short * p_audio, int p_framecnt)
 {
+
+    if (p_framecnt == 0) {
+        // We are empty, do nothing
+        return true;
+    }
     if(!m_isopen)
         return false;
 

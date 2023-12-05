@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<movie output="C:\Users\Admin\Documents\cse471\cse471-project2\sold.asf" source="C:\Users\Admin\Documents\cse471\cse471-project2\RotoScope\heli.wmv">
+	<frame num="120">
+		<gscreen path="C:\Users\Admin\Documents\cse471\cse471-project2\jennifer-over.jpg" a1="1" a2="1.5"/>
+		<ripple time="0" amp="1" freq="0.01"/>
+	</frame>
+</movie>

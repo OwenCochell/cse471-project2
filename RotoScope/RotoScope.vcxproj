@@ -141,6 +141,7 @@
     <ClCompile Include="ChildFrm.cpp" />
     <ClCompile Include="audio\DirSoundSource.cpp" />
     <ClCompile Include="graphics\GrImage.cpp" />
+    <ClCompile Include="ImageWarp.cpp" />
     <ClCompile Include="LineDlg.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="video\MovieMake.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="ChildFrm.h" />
     <ClInclude Include="audio\DirSoundSource.h" />
     <ClInclude Include="graphics\GrImage.h" />
+    <ClInclude Include="ImageWarp.h" />
     <ClInclude Include="LineDlg.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="video\MovieMake.h" />

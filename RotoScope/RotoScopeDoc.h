@@ -92,7 +92,33 @@ private:
 	CGrImage gimage;
 	bool do_gscreen = false;
 
+	double a1 = 1;
+	double a2 = 0.5;
+
+	//
+	// Ripple Variables
+	//
+
+	bool do_ripple = false;
+	int rtime = 0;  // Current ripple time
+
+	float rip_freq = 0.01;  // Frequency value
+	float rip_amp = 1;  // Amplitude value
+
+	//
+	// Image stuff
+	//
+
+	bool do_image = false;
+	int image_x = 0;
+	int image_y = 0;
+
 	std::stack<CGrImage>	m_images;
+
+	// Top-level XML node:
+	CComPtr<IXMLDOMNode> xml_root = nullptr;
+
+	void LoadXMLFrame();
 
     afx_msg void OnFramesWriteoneframe();
     afx_msg void OnUpdateFramesWriteoneframe(CCmdUI *pCmdUI);
@@ -110,6 +136,7 @@ private:
     afx_msg void OnUpdateMoviesClosebackgroundaudio(CCmdUI *pCmdUI);
 
 	void DoGreenscreen();
+	void ImageWarp();
 public:
 	virtual BOOL OnSaveDocument(LPCTSTR lpszPathName);
 	void SaveMovieData(IXMLDOMDocument *xmlDoc, IXMLDOMNode *inNode);
